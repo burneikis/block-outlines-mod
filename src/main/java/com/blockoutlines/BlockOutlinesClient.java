@@ -4,6 +4,7 @@ import net.minecraft.client.render.entity.FallingBlockEntityRenderer;
 import com.blockoutlines.entity.OutlineBlockEntity;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.block.BlockState;
@@ -15,19 +16,21 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BlockOutlinesClient implements ClientModInitializer {
     
     private static KeyBinding toggleOutlinesKey;
     private boolean outlinesEnabled = false;
     private Set<BlockPos> trackedDiamondBlocks = new HashSet<>();
-    private Set<Integer> spawnedOutlineEntities = new HashSet<>();
+    private Map<BlockPos, Integer> outlineEntityMap = new HashMap<>();
+    private AtomicInteger entityIdCounter = new AtomicInteger(1000000);
     private int scanRadius = 16;
     private int tickCounter = 0;
     
@@ -41,6 +44,13 @@ public class BlockOutlinesClient implements ClientModInitializer {
             GLFW.GLFW_KEY_O,
             "category.block-outlines.general"
         ));
+        
+        // Clear outlines when world changes
+        ClientEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
+            if (entity instanceof OutlineBlockEntity) {
+                outlineEntityMap.values().removeIf(id -> id == entity.getId());
+            }
+        });
         
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (toggleOutlinesKey.wasPressed()) {
@@ -67,6 +77,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
         } else {
             // Clear tracked blocks to force fresh scan
             trackedDiamondBlocks.clear();
+            outlineEntityMap.clear();
             // Immediately scan when enabled
             updateDiamondBlockOutlines(client);
         }
@@ -88,16 +99,12 @@ public class BlockOutlinesClient implements ClientModInitializer {
         BlockPos playerPos = client.player.getBlockPos();
         Set<BlockPos> currentDiamondBlocks = new HashSet<>();
         
-        BlockOutlines.LOGGER.debug("Scanning for diamond blocks/ore around player at {}", playerPos);
         
-        int scannedBlocks = 0;
-        int diamondBlocksFound = 0;
         
         for (int x = -scanRadius; x <= scanRadius; x++) {
             for (int y = -scanRadius; y <= scanRadius; y++) {
                 for (int z = -scanRadius; z <= scanRadius; z++) {
                     BlockPos pos = playerPos.add(x, y, z);
-                    scannedBlocks++;
                     
                     // Check if chunk is loaded
                     if (!world.isChunkLoaded(pos)) {
@@ -107,14 +114,11 @@ public class BlockOutlinesClient implements ClientModInitializer {
                     BlockState blockState = world.getBlockState(pos);
                     if (blockState.isOf(Blocks.DIAMOND_BLOCK) || blockState.isOf(Blocks.DIAMOND_ORE) || blockState.isOf(Blocks.DEEPSLATE_DIAMOND_ORE)) {
                         currentDiamondBlocks.add(pos);
-                        diamondBlocksFound++;
-                        BlockOutlines.LOGGER.info("Found diamond block/ore at {} - Block: {}", pos, blockState.getBlock().getName().getString());
                     }
                 }
             }
         }
         
-        BlockOutlines.LOGGER.info("Scanned {} blocks, found {} diamond blocks/ore", scannedBlocks, diamondBlocksFound);
         
         Set<BlockPos> newBlocks = new HashSet<>(currentDiamondBlocks);
         newBlocks.removeAll(trackedDiamondBlocks);
@@ -122,14 +126,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
         Set<BlockPos> removedBlocks = new HashSet<>(trackedDiamondBlocks);
         removedBlocks.removeAll(currentDiamondBlocks);
         
-        // Debug logging
-        if (!currentDiamondBlocks.isEmpty()) {
-            BlockOutlines.LOGGER.info("Found {} diamond blocks", currentDiamondBlocks.size());
-        }
         
-        if (!newBlocks.isEmpty()) {
-            BlockOutlines.LOGGER.info("Spawning outlines for {} new diamond blocks/ore", newBlocks.size());
-        }
         
         for (BlockPos pos : newBlocks) {
             spawnOutlineAtDiamondBlock(world, pos);
@@ -152,24 +149,19 @@ public class BlockOutlinesClient implements ClientModInitializer {
         outlineEntity.setPosition(spawnPos.x, spawnPos.y, spawnPos.z);
         
         if (addClientEntity(world, outlineEntity)) {
-            spawnedOutlineEntities.add(outlineEntity.getId());
-            BlockOutlines.LOGGER.info("Spawned diamond ore outline at exact position {}, {}, {}", 
-                spawnPos.x, spawnPos.y, spawnPos.z);
+            outlineEntityMap.put(diamondPos, outlineEntity.getId());
         }
     }
     
     
     private void removeOutlineAtPosition(ClientWorld world, BlockPos pos) {
-        Vec3d targetPos = Vec3d.of(pos).add(0.5, 0.0, 0.5);
-        
-        List<Entity> nearbyEntities = world.getOtherEntities(null, 
-            net.minecraft.util.math.Box.of(targetPos, 4.0, 4.0, 4.0));
-        
-        for (Entity entity : nearbyEntities) {
-            if (entity instanceof OutlineBlockEntity && spawnedOutlineEntities.contains(entity.getId())) {
+        Integer entityId = outlineEntityMap.get(pos);
+        if (entityId != null) {
+            Entity entity = world.getEntityById(entityId);
+            if (entity instanceof OutlineBlockEntity) {
                 entity.discard();
-                spawnedOutlineEntities.remove(entity.getId());
             }
+            outlineEntityMap.remove(pos);
         }
     }
     
@@ -177,14 +169,14 @@ public class BlockOutlinesClient implements ClientModInitializer {
         if (client.world == null) return;
         
         ClientWorld world = client.world;
-        for (Integer entityId : new HashSet<>(spawnedOutlineEntities)) {
+        for (Integer entityId : new HashSet<>(outlineEntityMap.values())) {
             Entity entity = world.getEntityById(entityId);
             if (entity instanceof OutlineBlockEntity) {
                 entity.discard();
             }
         }
         
-        spawnedOutlineEntities.clear();
+        outlineEntityMap.clear();
         trackedDiamondBlocks.clear();
     }
     
@@ -201,6 +193,6 @@ public class BlockOutlinesClient implements ClientModInitializer {
     }
     
     private int generateClientEntityId() {
-        return -(int)(System.currentTimeMillis() % Integer.MAX_VALUE);
+        return -entityIdCounter.incrementAndGet();
     }
 }
