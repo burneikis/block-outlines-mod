@@ -31,7 +31,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
     private static KeyBinding toggleOutlinesKey;
     private static KeyBinding openConfigKey;
     private boolean outlinesEnabled = false;
-    private Set<BlockPos> trackedDiamondBlocks = new HashSet<>();
+    private Set<BlockPos> trackedDiamondOres = new HashSet<>();
     private Map<BlockPos, Integer> outlineEntityMap = new HashMap<>();
     private AtomicInteger entityIdCounter = new AtomicInteger(1000000);
     private int scanRadius = 16;
@@ -91,7 +91,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
             clearAllOutlines(client);
         } else {
             // Clear tracked blocks to force fresh scan
-            trackedDiamondBlocks.clear();
+            trackedDiamondOres.clear();
             outlineEntityMap.clear();
             // Immediately scan when enabled
             updateDiamondBlockOutlines(client);
@@ -112,7 +112,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
         
         ClientWorld world = client.world;
         BlockPos playerPos = client.player.getBlockPos();
-        Set<BlockPos> currentDiamondBlocks = new HashSet<>();
+        Set<BlockPos> currentDiamondOres = new HashSet<>();
         
         
         
@@ -122,19 +122,19 @@ public class BlockOutlinesClient implements ClientModInitializer {
                     BlockPos pos = playerPos.add(x, y, z);
                     
                     BlockState blockState = world.getBlockState(pos);
-                    if (blockState.isOf(Blocks.DIAMOND_BLOCK) || blockState.isOf(Blocks.DIAMOND_ORE) || blockState.isOf(Blocks.DEEPSLATE_DIAMOND_ORE)) {
-                        currentDiamondBlocks.add(pos);
+                    if (blockState.isOf(Blocks.DIAMOND_ORE)) {
+                        currentDiamondOres.add(pos);
                     }
                 }
             }
         }
         
         
-        Set<BlockPos> newBlocks = new HashSet<>(currentDiamondBlocks);
-        newBlocks.removeAll(trackedDiamondBlocks);
+        Set<BlockPos> newBlocks = new HashSet<>(currentDiamondOres);
+        newBlocks.removeAll(trackedDiamondOres);
         
-        Set<BlockPos> removedBlocks = new HashSet<>(trackedDiamondBlocks);
-        removedBlocks.removeAll(currentDiamondBlocks);
+        Set<BlockPos> removedBlocks = new HashSet<>(trackedDiamondOres);
+        removedBlocks.removeAll(currentDiamondOres);
         
         
         
@@ -146,7 +146,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
             removeOutlineAtPosition(world, pos);
         }
         
-        trackedDiamondBlocks = currentDiamondBlocks;
+        trackedDiamondOres = currentDiamondOres;
     }
     
     private void spawnOutlineAtDiamondBlock(ClientWorld world, BlockPos diamondPos) {
@@ -187,7 +187,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
         }
         
         outlineEntityMap.clear();
-        trackedDiamondBlocks.clear();
+        trackedDiamondOres.clear();
     }
     
     private boolean addClientEntity(ClientWorld world, Entity entity) {
@@ -222,7 +222,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
             if (!enabled) {
                 clearAllOutlines(client);
             } else {
-                trackedDiamondBlocks.clear();
+                trackedDiamondOres.clear();
                 outlineEntityMap.clear();
                 updateDiamondBlockOutlines(client);
             }
