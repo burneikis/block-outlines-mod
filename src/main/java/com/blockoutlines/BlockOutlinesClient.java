@@ -1,6 +1,6 @@
 package com.blockoutlines;
 
-import net.minecraft.client.render.entity.FallingBlockEntityRenderer;
+import com.blockoutlines.client.OutlineBlockEntityRenderer;
 import com.blockoutlines.entity.OutlineBlockEntity;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -36,7 +36,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
     
     @Override
     public void onInitializeClient() {
-        EntityRendererRegistry.register(BlockOutlines.OUTLINE_BLOCK, FallingBlockEntityRenderer::new);
+        EntityRendererRegistry.register(BlockOutlines.OUTLINE_BLOCK, OutlineBlockEntityRenderer::new);
         
         toggleOutlinesKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "key.block-outlines.toggle_outlines",
