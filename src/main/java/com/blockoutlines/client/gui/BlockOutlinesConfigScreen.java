@@ -7,7 +7,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.SliderWidget;
-import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 
 public class BlockOutlinesConfigScreen extends Screen {
