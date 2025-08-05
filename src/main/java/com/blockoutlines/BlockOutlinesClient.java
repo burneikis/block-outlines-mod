@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -31,12 +32,13 @@ public class BlockOutlinesClient implements ClientModInitializer {
     private static KeyBinding toggleOutlinesKey;
     private static KeyBinding openConfigKey;
     private boolean outlinesEnabled = false;
-    private Set<BlockPos> trackedDiamondOres = new HashSet<>();
+    private Set<BlockPos> trackedBlocks = new HashSet<>();
     private Map<BlockPos, Integer> outlineEntityMap = new HashMap<>();
     private AtomicInteger entityIdCounter = new AtomicInteger(1000000);
     private int scanRadius = 16;
     private int scanRate = 10; // How many ticks between scans (10 = 0.5 seconds)
     private int tickCounter = 0;
+    private Block targetBlock = Blocks.DIAMOND_ORE; // Configurable target block
     
     @Override
     public void onInitializeClient() {
@@ -77,7 +79,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
                 tickCounter++;
                 // Scan based on configurable scan rate
                 if (tickCounter % scanRate == 0) {
-                    updateDiamondBlockOutlines(client);
+                    updateBlockOutlines(client);
                 }
             }
         });
@@ -92,10 +94,10 @@ public class BlockOutlinesClient implements ClientModInitializer {
             clearAllOutlines(client);
         } else {
             // Clear tracked blocks to force fresh scan
-            trackedDiamondOres.clear();
+            trackedBlocks.clear();
             outlineEntityMap.clear();
             // Immediately scan when enabled
-            updateDiamondBlockOutlines(client);
+            updateBlockOutlines(client);
         }
         
         BlockOutlines.LOGGER.info("Block outlines {}", outlinesEnabled ? "enabled" : "disabled");
@@ -106,14 +108,14 @@ public class BlockOutlinesClient implements ClientModInitializer {
         }
     }
     
-    private void updateDiamondBlockOutlines(MinecraftClient client) {
+    private void updateBlockOutlines(MinecraftClient client) {
         if (client.player == null || client.world == null) {
             return;
         }
         
         ClientWorld world = client.world;
         BlockPos playerPos = client.player.getBlockPos();
-        Set<BlockPos> currentDiamondOres = new HashSet<>();
+        Set<BlockPos> currentBlocks = new HashSet<>();
         
         
         
@@ -123,43 +125,43 @@ public class BlockOutlinesClient implements ClientModInitializer {
                     BlockPos pos = playerPos.add(x, y, z);
                     
                     BlockState blockState = world.getBlockState(pos);
-                    if (blockState.isOf(Blocks.DIAMOND_ORE)) {
-                        currentDiamondOres.add(pos);
+                    if (blockState.isOf(targetBlock)) {
+                        currentBlocks.add(pos);
                     }
                 }
             }
         }
         
         
-        Set<BlockPos> newBlocks = new HashSet<>(currentDiamondOres);
-        newBlocks.removeAll(trackedDiamondOres);
+        Set<BlockPos> newBlocks = new HashSet<>(currentBlocks);
+        newBlocks.removeAll(trackedBlocks);
         
-        Set<BlockPos> removedBlocks = new HashSet<>(trackedDiamondOres);
-        removedBlocks.removeAll(currentDiamondOres);
+        Set<BlockPos> removedBlocks = new HashSet<>(trackedBlocks);
+        removedBlocks.removeAll(currentBlocks);
         
         
         
         for (BlockPos pos : newBlocks) {
-            spawnOutlineAtDiamondBlock(world, pos);
+            spawnOutlineAtBlock(world, pos);
         }
         
         for (BlockPos pos : removedBlocks) {
             removeOutlineAtPosition(world, pos);
         }
         
-        trackedDiamondOres = currentDiamondOres;
+        trackedBlocks = currentBlocks;
     }
     
-    private void spawnOutlineAtDiamondBlock(ClientWorld world, BlockPos diamondPos) {
-        // Spawn 1 block above the diamond ore to be visible (not inside the block)
-        Vec3d spawnPos = Vec3d.of(diamondPos).add(0.5, 0.0, 0.5);
+    private void spawnOutlineAtBlock(ClientWorld world, BlockPos blockPos) {
+        // Spawn 1 block above the target block to be visible (not inside the block)
+        Vec3d spawnPos = Vec3d.of(blockPos).add(0.5, 0.0, 0.5);
         
         // Create a glowing block that's more visible through solid blocks
-        OutlineBlockEntity outlineEntity = new OutlineBlockEntity(BlockOutlines.OUTLINE_BLOCK, world, Blocks.DIAMOND_ORE.getDefaultState());
+        OutlineBlockEntity outlineEntity = new OutlineBlockEntity(BlockOutlines.OUTLINE_BLOCK, world, targetBlock.getDefaultState());
         outlineEntity.setPosition(spawnPos.x, spawnPos.y, spawnPos.z);
         
         if (addClientEntity(world, outlineEntity)) {
-            outlineEntityMap.put(diamondPos, outlineEntity.getId());
+            outlineEntityMap.put(blockPos, outlineEntity.getId());
         }
     }
     
@@ -187,7 +189,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
         }
         
         outlineEntityMap.clear();
-        trackedDiamondOres.clear();
+        trackedBlocks.clear();
     }
     
     private boolean addClientEntity(ClientWorld world, Entity entity) {
@@ -222,9 +224,9 @@ public class BlockOutlinesClient implements ClientModInitializer {
             if (!enabled) {
                 clearAllOutlines(client);
             } else {
-                trackedDiamondOres.clear();
+                trackedBlocks.clear();
                 outlineEntityMap.clear();
-                updateDiamondBlockOutlines(client);
+                updateBlockOutlines(client);
             }
             
             BlockOutlines.LOGGER.info("Block outlines {}", enabled ? "enabled" : "disabled");
@@ -249,6 +251,28 @@ public class BlockOutlinesClient implements ClientModInitializer {
     
     public void setScanRate(int rate) {
         this.scanRate = Math.max(1, Math.min(20, rate));
+    }
+    
+    public Block getTargetBlock() {
+        return targetBlock;
+    }
+    
+    public void setTargetBlock(Block block) {
+        if (this.targetBlock != block) {
+            this.targetBlock = block;
+            if (outlinesEnabled) {
+                MinecraftClient client = MinecraftClient.getInstance();
+                // Clear existing outlines first (while we still have the entity map)
+                clearAllOutlines(client);
+            }
+            // Clear tracked blocks to force fresh scan with new target
+            trackedBlocks.clear();
+            // outlineEntityMap is already cleared by clearAllOutlines()
+            if (outlinesEnabled) {
+                MinecraftClient client = MinecraftClient.getInstance();
+                updateBlockOutlines(client);
+            }
+        }
     }
     
     public static BlockOutlinesClient getInstance() {

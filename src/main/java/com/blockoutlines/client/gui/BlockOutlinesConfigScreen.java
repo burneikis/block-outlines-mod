@@ -1,11 +1,13 @@
 package com.blockoutlines.client.gui;
 
 import com.blockoutlines.BlockOutlinesClient;
+import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.SliderWidget;
+import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 
 public class BlockOutlinesConfigScreen extends Screen {
@@ -40,12 +42,20 @@ public class BlockOutlinesConfigScreen extends Screen {
                 // Apply immediately
                 modClient.setOutlinesEnabled(outlinesEnabled);
             }
-        ).dimensions(this.width / 2 - 100, this.height / 2 - 70, 200, 20).build();
+        ).dimensions(this.width / 2 - 100, this.height / 2 - 90, 200, 20).build();
         this.addDrawableChild(toggleButton);
+
+        // Target block selector button
+        Block currentTarget = modClient.getTargetBlock();
+        String blockName = currentTarget.getName().getString();
+        this.addDrawableChild(ButtonWidget.builder(
+            Text.literal("Target: " + blockName),
+            button -> MinecraftClient.getInstance().setScreen(new BlockSelectorScreen(this, modClient))
+        ).dimensions(this.width / 2 - 100, this.height / 2 - 60, 200, 20).build());
 
         // Scan radius slider
         this.radiusSlider = new SliderWidget(
-            this.width / 2 - 100, this.height / 2 - 40, 200, 20,
+            this.width / 2 - 100, this.height / 2 - 30, 200, 20,
             Text.literal("Scan Radius: " + scanRadius), 
             (scanRadius - 16) / 48.0
         ) {
@@ -76,7 +86,7 @@ public class BlockOutlinesConfigScreen extends Screen {
 
         // Scan rate slider
         this.scanRateSlider = new SliderWidget(
-            this.width / 2 - 100, this.height / 2 - 10, 200, 20,
+            this.width / 2 - 100, this.height / 2, 200, 20,
             Text.literal("Scan Rate: " + scanRate + " ticks"), 
             (scanRate - 1) / 19.0
         ) {
@@ -109,7 +119,7 @@ public class BlockOutlinesConfigScreen extends Screen {
         this.addDrawableChild(ButtonWidget.builder(
             Text.literal("Close"),
             button -> this.close()
-        ).dimensions(this.width / 2 - 50, this.height / 2 + 35, 100, 20).build());
+        ).dimensions(this.width / 2 - 50, this.height / 2 + 40, 100, 20).build());
     }
 
     @Override
