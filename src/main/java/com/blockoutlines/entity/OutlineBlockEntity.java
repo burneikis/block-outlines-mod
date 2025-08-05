@@ -1,4 +1,4 @@
-package com.fakeblock.entity;
+package com.blockoutlines.entity;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -6,34 +6,41 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.world.World;
 
-public class ClientFallingSandEntity extends FallingBlockEntity {
+public class OutlineBlockEntity extends FallingBlockEntity {
     private int lifeTime = 0;
-    private static final int MAX_LIFETIME = 600; // 30 seconds at 20 TPS
+    private static final int MAX_LIFETIME = 1200; // 60 seconds at 20 TPS
+    private BlockState displayBlockState;
 
-    public ClientFallingSandEntity(EntityType<? extends FallingBlockEntity> entityType, World world) {
+    public OutlineBlockEntity(EntityType<? extends FallingBlockEntity> entityType, World world) {
         super(entityType, world);
         this.dropItem = false;
+        this.displayBlockState = Blocks.STONE.getDefaultState();
+    }
+
+    public OutlineBlockEntity(EntityType<? extends FallingBlockEntity> entityType, World world, BlockState blockState) {
+        this(entityType, world);
+        this.displayBlockState = blockState;
     }
 
     @Override
     public BlockState getBlockState() {
-        return Blocks.DIAMOND_ORE.getDefaultState();
+        return this.displayBlockState;
     }
 
+    public void setDisplayBlockState(BlockState blockState) {
+        this.displayBlockState = blockState;
+    }
 
     @Override
     public void tick() {
         super.tick();
         
-        // Increment lifetime counter
         this.lifeTime++;
         
-        // Remove entity after maximum lifetime to prevent memory leaks
         if (this.lifeTime > MAX_LIFETIME) {
             this.discard();
         }
         
-        // Remove if entity gets too far from spawn point or goes below world
         if (this.getY() < -64 || this.getY() > 320) {
             this.discard();
         }
@@ -51,8 +58,12 @@ public class ClientFallingSandEntity extends FallingBlockEntity {
 
     @Override
     public boolean isOnGround() {
-        // Check if the entity has landed
         return super.isOnGround();
+    }
+
+    @Override
+    public void move(net.minecraft.entity.MovementType movementType, net.minecraft.util.math.Vec3d movement) {
+        // Prevent any movement - stay exactly in place
     }
 
     public int getLifeTime() {

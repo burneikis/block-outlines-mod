@@ -1,151 +1,50 @@
-# Fake Block Test Mod
+# Block Outlines Mod
 
-A Minecraft Fabric mod that spawns client-side floating diamond ore blocks with glowing outlines. These blocks are completely client-side and invisible to the server and other players.
+A Minecraft Fabric mod that automatically detects diamond blocks in the world and renders floating outline blocks above them. The outline blocks are client-side only and invisible to other players.
 
-## How It Works
+## Features
 
-This mod creates custom entities that exist only in your client's world simulation. The server remains completely unaware of these entities, making them "fake" from the server's perspective.
-
-### Key Components
-
-#### 1. Custom Entity Class
-**File:** `src/main/java/com/fakeblock/entity/ClientFallingSandEntity.java`
-
-The core entity that extends `FallingBlockEntity` with special properties:
-
-```java
-public class ClientFallingSandEntity extends FallingBlockEntity {
-    @Override
-    public boolean hasNoGravity() {
-        return true;  // Prevents falling
-    }
-
-    @Override
-    public boolean isGlowing() {
-        return true;  // Adds outline effect
-    }
-
-    @Override
-    public BlockState getBlockState() {
-        return Blocks.DIAMOND_ORE.getDefaultState();  // Always renders as diamond ore
-    }
-}
-```
-
-**Key Features:**
-- **No Gravity** (`hasNoGravity():44`): Overrides gravity to make blocks float in place
-- **Glowing Outline** (`isGlowing():48`): Uses Minecraft's built-in glowing effect for the outline
-- **Block Appearance** (`getBlockState():19`): Forces the entity to render as diamond ore instead of sand
-- **Lifetime Management** (`tick():25`): Auto-despawns after 30 seconds to prevent memory leaks
-
-#### 2. Entity Registration
-**File:** `src/main/java/com/fakeblock/FakeBlockTest.java`
-
-Registers the custom entity type with Minecraft's entity registry:
-
-```java
-public static final EntityType<ClientFallingSandEntity> CLIENT_FALLING_SAND = Registry.register(
-    Registries.ENTITY_TYPE,
-    Identifier.of(MOD_ID, "client_falling_sand"),
-    EntityType.Builder.<ClientFallingSandEntity>create(ClientFallingSandEntity::new, SpawnGroup.MISC)
-        .dimensions(0.98f, 0.98f)
-        .eyeHeight(0.5f)
-        .maxTrackingRange(4)
-        .trackingTickInterval(20)
-        .build(RegistryKey.of(RegistryKeys.ENTITY_TYPE, Identifier.of(MOD_ID, "client_falling_sand")))
-);
-```
-
-#### 3. Client-Side Functionality
-**File:** `src/main/java/com/fakeblock/FakeBlockTestClient.java`
-
-Handles client-only features including keybinding and entity spawning:
-
-**Entity Renderer Registration** (`onInitializeClient():27`):
-```java
-EntityRendererRegistry.register(FakeBlockTest.CLIENT_FALLING_SAND, FallingBlockEntityRenderer::new);
-```
-
-**Keybinding Setup** (`onInitializeClient():30`):
-```java
-spawnFallingSandKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-    "key.fake-block-test.spawn_falling_sand",
-    InputUtil.Type.KEYSYM,
-    GLFW.GLFW_KEY_G,  // G key
-    "category.fake-block-test.general"
-));
-```
-
-**Entity Spawning Logic** (`spawnFallingSandEntity():47`):
-- Spawns entities above the block you're looking at
-- If not looking at a block, spawns above the player
-- Uses negative entity IDs to avoid conflicts with server entities
-- Adds entities directly to the client world
-
-#### 4. Entity ID Management
-**File:** `src/main/java/com/fakeblock/FakeBlockTestClient.java:95`
-
-```java
-private int generateClientEntityId() {
-    // Generate a negative ID to avoid conflicts with server entities
-    return -(int)(System.currentTimeMillis() % Integer.MAX_VALUE);
-}
-```
-
-Server entities typically use positive IDs, so negative IDs prevent conflicts.
-
-#### 5. Configuration Files
-
-**Mod Metadata** (`src/main/resources/fabric.mod.json:21`):
-```json
-"entrypoints": {
-    "main": ["com.fakeblock.FakeBlockTest"],
-    "client": ["com.fakeblock.FakeBlockTestClient"]
-}
-```
-
-**Keybinding Labels** (`src/main/resources/assets/fake-block-test/lang/en_us.json`):
-```json
-{
-  "key.fake-block-test.spawn_falling_sand": "Spawn Floating Diamond Ore",
-  "category.fake-block-test.general": "Fake Block Test"
-}
-```
+- **Automatic Diamond Ore Detection**: Scans a 16-block radius around the player for diamond ore, deepslate diamond ore, and diamond blocks
+- **Floating Outline Blocks**: Displays floating diamond ore blocks with glowing outlines at the exact coordinates of detected diamond ore
+- **Glowing Outlines**: All outline blocks have a glowing effect for better visibility
+- **Client-Side Only**: Completely client-side - no server modifications needed
+- **Toggle Functionality**: Press `O` to enable/disable the outline system
+- **Automatic Cleanup**: Outline blocks are automatically removed when diamond blocks are broken
 
 ## Usage
 
-1. **Install the mod** in your Fabric mod folder
-2. **Launch Minecraft** and join any world (singleplayer or multiplayer)
-3. **Press G** to spawn a floating diamond ore block
-4. **Look at blocks** before pressing G to spawn above specific locations
-5. **Blocks auto-despawn** after 30 seconds
+1. Install the mod in your Fabric mods folder
+2. Launch Minecraft and join any world
+3. Press `O` to toggle the block outline system on/off
+4. Place diamond blocks in the world to see floating outline blocks appear above them
+5. Break diamond blocks to automatically remove their outline blocks
+
+## How It Works
+
+The mod continuously scans for diamond blocks within a 32-block radius of the player. When diamond blocks are found, it spawns client-side floating entities above them that render as various ore blocks with glowing outlines. These entities:
+
+- Have no gravity (float in place)
+- Are invisible to the server and other players
+- Automatically despawn after 60 seconds
+- Are arranged in a circular pattern above each diamond block
 
 ## Technical Details
 
-### Why It Works
-- **Client-Side Only**: Entities exist purely in your local world simulation
-- **No Server Communication**: The server never knows about these entities
-- **Vanilla Renderer**: Uses Minecraft's built-in `FallingBlockEntityRenderer`
-- **Entity System**: Leverages Minecraft's existing entity framework
+- **Entity System**: Uses custom `OutlineBlockEntity` based on `FallingBlockEntity`
+- **Client-Side Rendering**: Leverages Minecraft's built-in `FallingBlockEntityRenderer`
+- **World Scanning**: Periodically scans for diamond blocks and updates outline display
+- **Memory Management**: Automatic cleanup prevents memory leaks
 
-### Limitations
-- Only visible to you (client-side only)
-- Cannot interact with the world (no collision with other entities)
-- Auto-despawns to prevent memory leaks
-- Limited to 30-second lifetime
+## Controls
 
-### Performance Considerations
-- Minimal performance impact due to lightweight entities
-- Automatic cleanup prevents memory leaks
-- Entity limit naturally controlled by 30-second despawn timer
+- `O` - Toggle block outlines on/off
 
-## Development
+## Requirements
 
-This mod demonstrates:
-- Client-side entity creation
-- Custom entity behavior modification
-- Keybinding registration
-- Entity renderer usage
-- Reflection alternatives (overriding methods vs field access)
+- Minecraft 1.21.5
+- Fabric Loader 0.16.14+
+- Fabric API
 
-The approach shows how to create client-side content that doesn't require server-side changes, making it perfect for client-side utility mods or visual enhancements.
+## Based On
+
+This mod is built using code from the fake-block-test-template-1.21.5, extending its client-side entity rendering capabilities to create an automatic diamond block detection and outline system.

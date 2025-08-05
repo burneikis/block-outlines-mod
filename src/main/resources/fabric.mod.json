@@ -1,29 +1,29 @@
 {
 	"schemaVersion": 1,
-	"id": "fake-block-test",
+	"id": "block-outlines",
 	"version": "${version}",
-	"name": "Fake Block Test",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"name": "Block Outlines",
+	"description": "Renders floating blocks with outlines at diamond block coordinates",
 	"authors": [
-		"Me!"
+		"BlockOutlines"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/fake-block-test/icon.png",
+	"icon": "assets/block-outlines/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.fakeblock.FakeBlockTest"
+			"com.blockoutlines.BlockOutlines"
 		],
 		"client": [
-			"com.fakeblock.FakeBlockTestClient"
+			"com.blockoutlines.BlockOutlinesClient"
 		]
 	},
 	"mixins": [
-		"fake-block-test.mixins.json"
+		"block-outlines.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.16.14",
