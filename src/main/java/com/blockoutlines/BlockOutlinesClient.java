@@ -154,8 +154,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
         Vec3d spawnPos = Vec3d.of(diamondPos).add(0.5, 0.0, 0.5);
         
         // Create a glowing block that's more visible through solid blocks
-        // It can't be the same block as the block it's outlining, so we use a diamond block
-        OutlineBlockEntity outlineEntity = new OutlineBlockEntity(BlockOutlines.OUTLINE_BLOCK, world, Blocks.DIAMOND_BLOCK.getDefaultState());
+        OutlineBlockEntity outlineEntity = new OutlineBlockEntity(BlockOutlines.OUTLINE_BLOCK, world, Blocks.DIAMOND_ORE.getDefaultState());
         outlineEntity.setPosition(spawnPos.x, spawnPos.y, spawnPos.z);
         
         if (addClientEntity(world, outlineEntity)) {
