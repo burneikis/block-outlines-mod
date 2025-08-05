@@ -1,0 +1,99 @@
+package com.blockoutlines.client.gui;
+
+import com.blockoutlines.BlockOutlinesClient;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.SliderWidget;
+import net.minecraft.text.Text;
+
+public class BlockOutlinesConfigScreen extends Screen {
+    private final Screen parent;
+    private final BlockOutlinesClient modClient;
+    private boolean outlinesEnabled;
+    private int scanRadius;
+    private ButtonWidget toggleButton;
+    private SliderWidget radiusSlider;
+
+    public BlockOutlinesConfigScreen(Screen parent, BlockOutlinesClient modClient) {
+        super(Text.literal("Block Outlines Configuration"));
+        this.parent = parent;
+        this.modClient = modClient;
+        this.outlinesEnabled = modClient.isOutlinesEnabled();
+        this.scanRadius = modClient.getScanRadius();
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+
+        // Toggle button
+        this.toggleButton = ButtonWidget.builder(
+            Text.literal("Outlines: " + (outlinesEnabled ? "ON" : "OFF")),
+            button -> {
+                outlinesEnabled = !outlinesEnabled;
+                button.setMessage(Text.literal("Outlines: " + (outlinesEnabled ? "ON" : "OFF")));
+                // Apply immediately
+                modClient.setOutlinesEnabled(outlinesEnabled);
+            }
+        ).dimensions(this.width / 2 - 100, this.height / 2 - 50, 200, 20).build();
+        this.addDrawableChild(toggleButton);
+
+        // Scan radius slider
+        this.radiusSlider = new SliderWidget(
+            this.width / 2 - 100, this.height / 2 - 20, 200, 20,
+            Text.literal("Scan Radius: " + scanRadius), 
+            (scanRadius - 1) / 31.0
+        ) {
+            @Override
+            protected void updateMessage() {
+                int oldRadius = BlockOutlinesConfigScreen.this.scanRadius;
+                BlockOutlinesConfigScreen.this.scanRadius = (int) (this.value * 31) + 1;
+                this.setMessage(Text.literal("Scan Radius: " + BlockOutlinesConfigScreen.this.scanRadius));
+                
+                // Apply immediately if the value actually changed
+                if (oldRadius != BlockOutlinesConfigScreen.this.scanRadius) {
+                    modClient.setScanRadius(BlockOutlinesConfigScreen.this.scanRadius);
+                }
+            }
+
+            @Override
+            protected void applyValue() {
+                int oldRadius = BlockOutlinesConfigScreen.this.scanRadius;
+                BlockOutlinesConfigScreen.this.scanRadius = (int) (this.value * 31) + 1;
+                
+                // Apply immediately if the value actually changed
+                if (oldRadius != BlockOutlinesConfigScreen.this.scanRadius) {
+                    modClient.setScanRadius(BlockOutlinesConfigScreen.this.scanRadius);
+                }
+            }
+        };
+        this.addDrawableChild(radiusSlider);
+
+        // Close button (settings are applied immediately)
+        this.addDrawableChild(ButtonWidget.builder(
+            Text.literal("Close"),
+            button -> this.close()
+        ).dimensions(this.width / 2 - 50, this.height / 2 + 35, 100, 20).build());
+    }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        this.renderBackground(context, mouseX, mouseY, delta);
+        super.render(context, mouseX, mouseY, delta);
+
+        // Title
+        context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 20, 0xFFFFFF);
+    }
+
+    @Override
+    public void close() {
+        MinecraftClient.getInstance().setScreen(parent);
+    }
+
+    @Override
+    public boolean shouldPause() {
+        return false;
+    }
+}

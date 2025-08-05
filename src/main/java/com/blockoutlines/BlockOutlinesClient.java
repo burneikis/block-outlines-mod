@@ -1,6 +1,7 @@
 package com.blockoutlines;
 
 import com.blockoutlines.client.OutlineBlockEntityRenderer;
+import com.blockoutlines.client.gui.BlockOutlinesConfigScreen;
 import com.blockoutlines.entity.OutlineBlockEntity;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -26,7 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class BlockOutlinesClient implements ClientModInitializer {
     
+    private static BlockOutlinesClient instance;
     private static KeyBinding toggleOutlinesKey;
+    private static KeyBinding openConfigKey;
     private boolean outlinesEnabled = false;
     private Set<BlockPos> trackedDiamondBlocks = new HashSet<>();
     private Map<BlockPos, Integer> outlineEntityMap = new HashMap<>();
@@ -36,12 +39,20 @@ public class BlockOutlinesClient implements ClientModInitializer {
     
     @Override
     public void onInitializeClient() {
+        instance = this;
         EntityRendererRegistry.register(BlockOutlines.OUTLINE_BLOCK, OutlineBlockEntityRenderer::new);
         
         toggleOutlinesKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "key.block-outlines.toggle_outlines",
             InputUtil.Type.KEYSYM,
             GLFW.GLFW_KEY_O,
+            "category.block-outlines.general"
+        ));
+        
+        openConfigKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+            "key.block-outlines.open_config",
+            InputUtil.Type.KEYSYM,
+            GLFW.GLFW_KEY_RIGHT_SHIFT,
             "category.block-outlines.general"
         ));
         
@@ -55,6 +66,10 @@ public class BlockOutlinesClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (toggleOutlinesKey.wasPressed()) {
                 toggleOutlines(client);
+            }
+            
+            while (openConfigKey.wasPressed()) {
+                openConfigScreen(client);
             }
             
             if (outlinesEnabled && client.player != null && client.world != null) {
@@ -189,5 +204,46 @@ public class BlockOutlinesClient implements ClientModInitializer {
     
     private int generateClientEntityId() {
         return -entityIdCounter.incrementAndGet();
+    }
+    
+    private void openConfigScreen(MinecraftClient client) {
+        client.setScreen(new BlockOutlinesConfigScreen(client.currentScreen, this));
+    }
+    
+    public boolean isOutlinesEnabled() {
+        return outlinesEnabled;
+    }
+    
+    public void setOutlinesEnabled(boolean enabled) {
+        if (this.outlinesEnabled != enabled) {
+            this.outlinesEnabled = enabled;
+            MinecraftClient client = MinecraftClient.getInstance();
+            
+            if (!enabled) {
+                clearAllOutlines(client);
+            } else {
+                trackedDiamondBlocks.clear();
+                outlineEntityMap.clear();
+                updateDiamondBlockOutlines(client);
+            }
+            
+            BlockOutlines.LOGGER.info("Block outlines {}", enabled ? "enabled" : "disabled");
+            
+            if (client.player != null) {
+                client.player.sendMessage(net.minecraft.text.Text.literal("Block outlines " + (enabled ? "enabled" : "disabled")), false);
+            }
+        }
+    }
+    
+    public int getScanRadius() {
+        return scanRadius;
+    }
+    
+    public void setScanRadius(int radius) {
+        this.scanRadius = Math.max(1, Math.min(32, radius));
+    }
+    
+    public static BlockOutlinesClient getInstance() {
+        return instance;
     }
 }
