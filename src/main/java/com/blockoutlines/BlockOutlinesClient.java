@@ -106,11 +106,6 @@ public class BlockOutlinesClient implements ClientModInitializer {
                 for (int z = -scanRadius; z <= scanRadius; z++) {
                     BlockPos pos = playerPos.add(x, y, z);
                     
-                    // Check if chunk is loaded
-                    if (!world.isChunkLoaded(pos)) {
-                        continue;
-                    }
-                    
                     BlockState blockState = world.getBlockState(pos);
                     if (blockState.isOf(Blocks.DIAMOND_BLOCK) || blockState.isOf(Blocks.DIAMOND_ORE) || blockState.isOf(Blocks.DEEPSLATE_DIAMOND_ORE)) {
                         currentDiamondBlocks.add(pos);
