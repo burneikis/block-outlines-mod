@@ -35,6 +35,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
     private Map<BlockPos, Integer> outlineEntityMap = new HashMap<>();
     private AtomicInteger entityIdCounter = new AtomicInteger(1000000);
     private int scanRadius = 16;
+    private int scanRate = 10; // How many ticks between scans (10 = 0.5 seconds)
     private int tickCounter = 0;
     
     @Override
@@ -74,8 +75,8 @@ public class BlockOutlinesClient implements ClientModInitializer {
             
             if (outlinesEnabled && client.player != null && client.world != null) {
                 tickCounter++;
-                // Scan every 10 ticks (0.5 seconds) for more responsive updates
-                if (tickCounter % 10 == 0) {
+                // Scan based on configurable scan rate
+                if (tickCounter % scanRate == 0) {
                     updateDiamondBlockOutlines(client);
                 }
             }
@@ -239,7 +240,15 @@ public class BlockOutlinesClient implements ClientModInitializer {
     }
     
     public void setScanRadius(int radius) {
-        this.scanRadius = Math.max(1, Math.min(32, radius));
+        this.scanRadius = Math.max(16, Math.min(64, radius));
+    }
+    
+    public int getScanRate() {
+        return scanRate;
+    }
+    
+    public void setScanRate(int rate) {
+        this.scanRate = Math.max(1, Math.min(20, rate));
     }
     
     public static BlockOutlinesClient getInstance() {
