@@ -22,8 +22,8 @@ public class BlockOutlines implements ModInitializer {
 		Registries.ENTITY_TYPE,
 		Identifier.of(MOD_ID, "outline_block"),
 		EntityType.Builder.<OutlineBlockEntity>create(OutlineBlockEntity::new, SpawnGroup.MISC)
-			.dimensions(0.1f, 0.1f)
-			.eyeHeight(0.0f)
+			.dimensions(0.9f, 0.9f) // affects hitbox, but also rendering distance
+			.eyeHeight(0.5f)
 			.maxTrackingRange(4)
 			.trackingTickInterval(20)
 			.build(RegistryKey.of(RegistryKeys.ENTITY_TYPE, Identifier.of(MOD_ID, "outline_block")))
