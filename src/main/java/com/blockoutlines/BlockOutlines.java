@@ -22,7 +22,8 @@ public class BlockOutlines implements ModInitializer {
 		Registries.ENTITY_TYPE,
 		Identifier.of(MOD_ID, "outline_block"),
 		EntityType.Builder.<OutlineBlockEntity>create(OutlineBlockEntity::new, SpawnGroup.MISC)
-			.eyeHeight(0.5f)
+			.dimensions(0.1f, 0.1f)
+			.eyeHeight(0.0f)
 			.maxTrackingRange(4)
 			.trackingTickInterval(20)
 			.build(RegistryKey.of(RegistryKeys.ENTITY_TYPE, Identifier.of(MOD_ID, "outline_block")))

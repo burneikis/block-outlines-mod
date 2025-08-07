@@ -22,7 +22,7 @@ public class OutlineBlockEntityRenderer extends EntityRenderer<OutlineBlockEntit
         matrices.push();
         
         // Scale down by .01% to prevent z-fighting
-        matrices.scale(0.9999f, 0.9999f, 0.9999f);
+        // matrices.scale(0.9999f, 0.9999f, 0.9999f);
         
         if (state.blockState.getRenderType() == BlockRenderType.MODEL) {
             matrices.translate(-0.5, 0.0, -0.5);
