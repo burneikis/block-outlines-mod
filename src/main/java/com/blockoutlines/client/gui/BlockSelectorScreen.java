@@ -60,9 +60,9 @@ public class BlockSelectorScreen extends Screen {
         this.addSelectableChild(searchField);
         this.setInitialFocus(searchField);
 
-        // Cancel button
+        // Close button
         this.addDrawableChild(ButtonWidget.builder(
-            Text.literal("Cancel"),
+            Text.literal("Close"),
             button -> this.close()
         ).dimensions(this.width / 2 - 50, this.height - 25, 100, 20).build());
     }
