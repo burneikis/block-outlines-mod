@@ -4,6 +4,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.FallingBlockEntity;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class OutlineBlockEntity extends FallingBlockEntity {
@@ -68,5 +69,9 @@ public class OutlineBlockEntity extends FallingBlockEntity {
 
     public int getLifeTime() {
         return this.lifeTime;
+    }
+
+    public BlockPos getBlockPos() {
+        return BlockPos.ofFloored(this.getX(), this.getY(), this.getZ());
     }
 }
