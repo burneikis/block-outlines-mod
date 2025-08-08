@@ -29,14 +29,20 @@ public class CustomBlockOutlineRenderer {
         OutlineVertexConsumerProvider outlineProvider,
         World world,
         Set<BlockPos> blockPositions,
-        Block targetBlock
+        Block targetBlock,
+        int color
     ) {
         if (blockPositions.isEmpty()) {
             return;
         }
         
-        // Set bright cyan outline color
-        outlineProvider.setColor(0, 255, 255, 255); // RGBA: Cyan with full opacity
+        // Extract RGB components from the color
+        int red = (color >> 16) & 0xFF;
+        int green = (color >> 8) & 0xFF;
+        int blue = color & 0xFF;
+        
+        // Set the outline color
+        outlineProvider.setColor(red, green, blue, 255); // Full opacity
         
         // Get camera position for relative positioning
         Vec3d cameraPos = camera.getPos();

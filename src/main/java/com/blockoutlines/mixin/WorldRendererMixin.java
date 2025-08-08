@@ -56,7 +56,8 @@ public class WorldRendererMixin {
                 outlineProvider,
                 this.world,
                 client.getTrackedBlockPositions(),
-                client.getTargetBlock()
+                client.getTargetBlock(),
+                client.getOutlineColor()
             );
         }
     }

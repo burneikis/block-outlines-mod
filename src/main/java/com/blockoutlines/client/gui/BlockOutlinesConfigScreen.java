@@ -80,11 +80,17 @@ public class BlockOutlinesConfigScreen extends Screen {
         };
         this.addDrawableChild(radiusSlider);
 
+        // Color picker button
+        this.addDrawableChild(ButtonWidget.builder(
+            Text.literal("Outline Color"),
+            button -> MinecraftClient.getInstance().setScreen(new ColorPickerScreen(this, modClient))
+        ).dimensions(this.width / 2 - 100, this.height / 2, 200, 20).build());
+
         // Close button (settings are applied immediately)
         this.addDrawableChild(ButtonWidget.builder(
             Text.literal("Close"),
             button -> this.close()
-        ).dimensions(this.width / 2 - 50, this.height / 2 + 10, 100, 20).build());
+        ).dimensions(this.width / 2 - 50, this.height / 2 + 30, 100, 20).build());
     }
 
     @Override

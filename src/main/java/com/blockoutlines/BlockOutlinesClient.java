@@ -33,6 +33,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
     private int scanRadius = 32; // Blocks to scan around player
     private int scanRate = 20; // Ticks between scans (20 = 1 second)
     private Block targetBlock = Blocks.DIAMOND_ORE; // Configurable target block
+    private int outlineColor = 0xFFFFFF; // Default white color (RGB)
     
     // State tracking
     private int tickCounter = 0;
@@ -219,6 +220,14 @@ public class BlockOutlinesClient implements ClientModInitializer {
     
     public void setScanRate(int rate) {
         this.scanRate = Math.max(5, Math.min(100, rate));
+    }
+    
+    public int getOutlineColor() {
+        return outlineColor;
+    }
+    
+    public void setOutlineColor(int color) {
+        this.outlineColor = color & 0xFFFFFF; // Ensure it's a valid RGB color
     }
     
     // Legacy methods for backward compatibility with config screen
