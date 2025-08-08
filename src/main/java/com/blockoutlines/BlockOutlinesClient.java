@@ -263,7 +263,13 @@ public class BlockOutlinesClient implements ClientModInitializer {
     private int extractBlockColor(Block targetBlock) {
         // Try multiple methods to get the block's representative color
         
-        // Method 1: Try to get the map color from the block's default state
+        // Method 1: Check for ore-specific colors based on their drops
+        int oreColor = getOreDropColor(targetBlock);
+        if (oreColor != -1) {
+            return oreColor;
+        }
+        
+        // Method 2: Try to get the map color from the block's default state
         try {
             net.minecraft.block.BlockState defaultState = targetBlock.getDefaultState();
             net.minecraft.block.MapColor mapColor = defaultState.getMapColor(null, null);
@@ -275,7 +281,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
             // Fallback if map color extraction fails
         }
         
-        // Method 2: Try to get color from material/block properties
+        // Method 3: Try to get color from material/block properties
         try {
             net.minecraft.block.BlockState defaultState = targetBlock.getDefaultState();
             // Some blocks have material colors that can be accessed
@@ -287,40 +293,79 @@ public class BlockOutlinesClient implements ClientModInitializer {
             // Continue to fallback
         }
         
-        // Method 3: Fallback to predefined colors for common blocks
+        // Method 4: Fallback to predefined colors for common blocks
         return getBlockColorFallback(targetBlock);
     }
     
-    private int getBlockColorFallback(Block block) {
-        // Map common blocks to appropriate colors (same as ColorPickerScreen)
+    private int getOreDropColor(Block block) {
+        // Return colors based on what the ores actually drop (more vibrant and accurate)
         if (block == net.minecraft.block.Blocks.DIAMOND_ORE || 
             block == net.minecraft.block.Blocks.DEEPSLATE_DIAMOND_ORE) {
-            return 0x5DADE2; // Light blue for diamond
-        } else if (block == net.minecraft.block.Blocks.IRON_ORE || 
-                   block == net.minecraft.block.Blocks.DEEPSLATE_IRON_ORE) {
-            return 0xD4AF37; // Gold/brown for iron
+            return 0x00FFFF; // Bright cyan like diamond items
+        } else if (block == net.minecraft.block.Blocks.EMERALD_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_EMERALD_ORE) {
+            return 0x00FF00; // Bright green like emerald items
         } else if (block == net.minecraft.block.Blocks.GOLD_ORE || 
                    block == net.minecraft.block.Blocks.DEEPSLATE_GOLD_ORE ||
                    block == net.minecraft.block.Blocks.NETHER_GOLD_ORE) {
-            return 0xFFD700; // Gold color
-        } else if (block == net.minecraft.block.Blocks.COAL_ORE || 
-                   block == net.minecraft.block.Blocks.DEEPSLATE_COAL_ORE) {
-            return 0x2C2C2C; // Dark gray for coal
+            return 0xFFD700; // Bright gold like gold items
+        } else if (block == net.minecraft.block.Blocks.IRON_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_IRON_ORE) {
+            return 0xD8D8D8; // Light gray like iron ingots
         } else if (block == net.minecraft.block.Blocks.COPPER_ORE || 
                    block == net.minecraft.block.Blocks.DEEPSLATE_COPPER_ORE) {
-            return 0xB87333; // Copper color
+            return 0xE77C56; // Copper orange like copper ingots
         } else if (block == net.minecraft.block.Blocks.REDSTONE_ORE || 
                    block == net.minecraft.block.Blocks.DEEPSLATE_REDSTONE_ORE) {
-            return 0xFF0000; // Red for redstone
+            return 0xFF0000; // Bright red like redstone dust
         } else if (block == net.minecraft.block.Blocks.LAPIS_ORE || 
                    block == net.minecraft.block.Blocks.DEEPSLATE_LAPIS_ORE) {
-            return 0x1E90FF; // Blue for lapis
-        } else if (block == net.minecraft.block.Blocks.EMERALD_ORE || 
-                   block == net.minecraft.block.Blocks.DEEPSLATE_EMERALD_ORE) {
-            return 0x50C878; // Green for emerald
-        } else if (block.getName().getString().toLowerCase().contains("wood") ||
-                   block.getName().getString().toLowerCase().contains("log") ||
-                   block.getName().getString().toLowerCase().contains("plank")) {
+            return 0x1E90FF; // Bright blue like lapis lazuli
+        } else if (block == net.minecraft.block.Blocks.COAL_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_COAL_ORE) {
+            return 0x2F2F2F; // Dark charcoal like coal items
+        } else if (block == net.minecraft.block.Blocks.NETHER_QUARTZ_ORE) {
+            return 0xF0F0F0; // White like quartz
+        } else if (block == net.minecraft.block.Blocks.ANCIENT_DEBRIS) {
+            return 0x654740; // Dark brown like ancient debris texture
+        } else if (block.getName().getString().toLowerCase().contains("ore")) {
+            // Generic ore detection - try to determine color from ore name
+            String oreName = block.getName().getString().toLowerCase();
+            if (oreName.contains("tin")) {
+                return 0xC0C0C0; // Silver for tin
+            } else if (oreName.contains("silver")) {
+                return 0xC0C0C0; // Silver color
+            } else if (oreName.contains("lead")) {
+                return 0x5A5A5A; // Dark gray for lead
+            } else if (oreName.contains("zinc")) {
+                return 0xB8B8B8; // Light gray for zinc
+            } else if (oreName.contains("nickel")) {
+                return 0x8F8F8F; // Medium gray for nickel
+            } else if (oreName.contains("aluminum") || oreName.contains("aluminium")) {
+                return 0xE0E0E0; // Light gray for aluminum
+            } else if (oreName.contains("uranium")) {
+                return 0x32CD32; // Lime green for uranium (radioactive)
+            } else if (oreName.contains("ruby")) {
+                return 0xFF1493; // Deep pink for ruby
+            } else if (oreName.contains("sapphire")) {
+                return 0x0F52BA; // Deep blue for sapphire
+            } else if (oreName.contains("topaz")) {
+                return 0xFFD700; // Golden yellow for topaz
+            } else if (oreName.contains("amethyst")) {
+                return 0x9966CC; // Purple for amethyst
+            } else {
+                return 0xA0A0A0; // Default ore color - medium gray
+            }
+        } else {
+            return -1; // Not an ore, continue to other methods
+        }
+    }
+    
+    private int getBlockColorFallback(Block block) {
+        // Map common non-ore blocks to appropriate colors
+        if (block.getName().getString().toLowerCase().contains("wood") ||
+           block.getName().getString().toLowerCase().contains("log") ||
+           block.getName().getString().toLowerCase().contains("plank")) {
             return 0x8B4513; // Brown for wood
         } else if (block.getName().getString().toLowerCase().contains("stone")) {
             return 0x808080; // Gray for stone
@@ -332,6 +377,14 @@ public class BlockOutlinesClient implements ClientModInitializer {
             return 0x4169E1; // Blue for water
         } else if (block.getName().getString().toLowerCase().contains("lava")) {
             return 0xFF4500; // Orange-red for lava
+        } else if (block.getName().getString().toLowerCase().contains("sand")) {
+            return 0xF4E4BC; // Sandy beige for sand blocks
+        } else if (block.getName().getString().toLowerCase().contains("clay")) {
+            return 0xA0522D; // Clay brown for clay blocks  
+        } else if (block.getName().getString().toLowerCase().contains("wool")) {
+            return 0xFFFFFF; // White for wool (base color)
+        } else if (block.getName().getString().toLowerCase().contains("glass")) {
+            return 0xE6F3FF; // Light blue tint for glass
         } else {
             // Default fallback color - light gray
             return 0xC0C0C0;
