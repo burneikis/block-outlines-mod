@@ -50,7 +50,7 @@ public class ColorPickerScreen extends Screen {
     protected void init() {
         super.init();
         
-        int startY = this.height / 2 - 100;
+        int startY = this.height / 2 - 70; // Moved down to give more space for color preview
         
         // RGB Sliders
         this.redSlider = new ColorSlider(
@@ -164,10 +164,10 @@ public class ColorPickerScreen extends Screen {
         // Title
         context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 20, 0xFFFFFF);
         
-        // Color preview box
+        // Color preview box - positioned at the top
         int currentColor = (red << 16) | (green << 8) | blue;
         int previewX = this.width / 2 - 25;
-        int previewY = this.height / 2 - 25;
+        int previewY = 40; // Fixed position at top, below title
         
         // Draw color preview with border
         context.fill(previewX - 1, previewY - 1, previewX + 51, previewY + 21, 0xFFFFFFFF); // White border
