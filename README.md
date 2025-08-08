@@ -130,11 +130,11 @@ This approach eliminates the overhead of spawning fake entities (what I was doin
 
 This mod was made starting with me using hasOutline on normal living entities, then item entities, then trying to get it to work with block entities.
 
-[Block Entity Outlines](https://github.com/burneikis/Block-Entity-Outlines)
+[Block Entity Outlines](https://github.com/burneikis/block-entity-outlines)
 
 I couldn't get all block entities to work initially, and assumed normal blocks would be much harder, so I thought of rendering fake falling sand entities with the outline, and built a mod for that.
 
-[Fake Block Test](https://github.com/burneikis/fake-block-test-template-1.21.5)
+[Fake Sand Mod](https://github.com/burneikis/fake-sand-mod)
 
 Its kinda cool that you can render client side fake entities, worth going back in the commits and playing with the falling sand version, you can even move the fake blocks with pistons, which is kinda cooked. I think im gunna go back and revert some of the commits and make a mod that just renders fake falling sand entities with outlines, because its fun to play with.
 
