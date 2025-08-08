@@ -7,6 +7,9 @@ A Minecraft Fabric mod that automatically detects target blocks in the world and
 - **Automatic Block Detection**: Scans a configurable radius around the player for target blocks (default: diamond ore)
 - **Direct Block Outlines**: Renders glowing outlines directly on detected blocks without spawning entities
 - **Configurable Target Block**: Choose any block type to highlight through the config screen
+- **Auto Color Extraction**: Automatically extracts colors from target blocks using map colors and intelligent fallbacks
+- **Smart Auto Color Mode**: Colors automatically update when target block changes (enable by clicking "Auto" in color picker)
+- **Custom Color Picker**: Full RGB color picker with preset colors and auto color functionality
 - **Advanced Rendering**: Uses mixin-based rendering for invisible faces with glowing outlines
 - **Client-Side Only**: Completely client-side - no server modifications needed
 - **Toggle Functionality**: Press `O` to enable/disable the outline system

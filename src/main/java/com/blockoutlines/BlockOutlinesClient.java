@@ -34,6 +34,7 @@ public class BlockOutlinesClient implements ClientModInitializer {
     private int scanRate = 20; // Ticks between scans (20 = 1 second)
     private Block targetBlock = Blocks.DIAMOND_ORE; // Configurable target block
     private int outlineColor = 0xFFFFFF; // Default white color (RGB)
+    private boolean autoColorMode = false; // Whether to automatically update color when target block changes
     
     // State tracking
     private int tickCounter = 0;
@@ -198,6 +199,11 @@ public class BlockOutlinesClient implements ClientModInitializer {
             trackedBlockPositions.clear();
             previousPositions.clear();
             
+            // Auto update color if auto color mode is enabled
+            if (autoColorMode) {
+                updateAutoColor();
+            }
+            
             if (enabled) {
                 MinecraftClient client = MinecraftClient.getInstance();
                 scanForTargetBlocks(client);
@@ -228,6 +234,108 @@ public class BlockOutlinesClient implements ClientModInitializer {
     
     public void setOutlineColor(int color) {
         this.outlineColor = color & 0xFFFFFF; // Ensure it's a valid RGB color
+    }
+    
+    public boolean isAutoColorMode() {
+        return autoColorMode;
+    }
+    
+    public void setAutoColorMode(boolean autoColorMode) {
+        this.autoColorMode = autoColorMode;
+        
+        // If enabling auto color mode, update the color immediately
+        if (autoColorMode) {
+            updateAutoColor();
+        }
+    }
+    
+    private void updateAutoColor() {
+        // Extract color using the same logic as the ColorPickerScreen
+        int autoColor = extractBlockColor(targetBlock);
+        setOutlineColor(autoColor);
+        
+        // Optional: Log the color change
+        LOGGER.info("Auto color updated for {}: #{}", 
+            targetBlock.getName().getString(), 
+            String.format("%06X", autoColor));
+    }
+    
+    private int extractBlockColor(Block targetBlock) {
+        // Try multiple methods to get the block's representative color
+        
+        // Method 1: Try to get the map color from the block's default state
+        try {
+            net.minecraft.block.BlockState defaultState = targetBlock.getDefaultState();
+            net.minecraft.block.MapColor mapColor = defaultState.getMapColor(null, null);
+            
+            if (mapColor != null && mapColor != net.minecraft.block.MapColor.CLEAR) {
+                return mapColor.color;
+            }
+        } catch (Exception e) {
+            // Fallback if map color extraction fails
+        }
+        
+        // Method 2: Try to get color from material/block properties
+        try {
+            net.minecraft.block.BlockState defaultState = targetBlock.getDefaultState();
+            // Some blocks have material colors that can be accessed
+            if (defaultState.hasBlockEntity()) {
+                // Skip blocks with entities for now to avoid complexity
+                return getBlockColorFallback(targetBlock);
+            }
+        } catch (Exception e) {
+            // Continue to fallback
+        }
+        
+        // Method 3: Fallback to predefined colors for common blocks
+        return getBlockColorFallback(targetBlock);
+    }
+    
+    private int getBlockColorFallback(Block block) {
+        // Map common blocks to appropriate colors (same as ColorPickerScreen)
+        if (block == net.minecraft.block.Blocks.DIAMOND_ORE || 
+            block == net.minecraft.block.Blocks.DEEPSLATE_DIAMOND_ORE) {
+            return 0x5DADE2; // Light blue for diamond
+        } else if (block == net.minecraft.block.Blocks.IRON_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_IRON_ORE) {
+            return 0xD4AF37; // Gold/brown for iron
+        } else if (block == net.minecraft.block.Blocks.GOLD_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_GOLD_ORE ||
+                   block == net.minecraft.block.Blocks.NETHER_GOLD_ORE) {
+            return 0xFFD700; // Gold color
+        } else if (block == net.minecraft.block.Blocks.COAL_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_COAL_ORE) {
+            return 0x2C2C2C; // Dark gray for coal
+        } else if (block == net.minecraft.block.Blocks.COPPER_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_COPPER_ORE) {
+            return 0xB87333; // Copper color
+        } else if (block == net.minecraft.block.Blocks.REDSTONE_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_REDSTONE_ORE) {
+            return 0xFF0000; // Red for redstone
+        } else if (block == net.minecraft.block.Blocks.LAPIS_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_LAPIS_ORE) {
+            return 0x1E90FF; // Blue for lapis
+        } else if (block == net.minecraft.block.Blocks.EMERALD_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_EMERALD_ORE) {
+            return 0x50C878; // Green for emerald
+        } else if (block.getName().getString().toLowerCase().contains("wood") ||
+                   block.getName().getString().toLowerCase().contains("log") ||
+                   block.getName().getString().toLowerCase().contains("plank")) {
+            return 0x8B4513; // Brown for wood
+        } else if (block.getName().getString().toLowerCase().contains("stone")) {
+            return 0x808080; // Gray for stone
+        } else if (block.getName().getString().toLowerCase().contains("grass")) {
+            return 0x228B22; // Green for grass
+        } else if (block.getName().getString().toLowerCase().contains("dirt")) {
+            return 0x8B4513; // Brown for dirt
+        } else if (block.getName().getString().toLowerCase().contains("water")) {
+            return 0x4169E1; // Blue for water
+        } else if (block.getName().getString().toLowerCase().contains("lava")) {
+            return 0xFF4500; // Orange-red for lava
+        } else {
+            // Default fallback color - light gray
+            return 0xC0C0C0;
+        }
     }
     
     // Legacy methods for backward compatibility with config screen

@@ -23,12 +23,13 @@ public class ColorPickerScreen extends Screen {
         0xFF00FF, // Magenta (255,0,255)
         0xFFFF00, // Yellow (255,255,0)
         0xFFFFFF, // White (255,255,255)
-        0x000000  // Black (0,0,0)
+        0x000000, // Black (0,0,0)
+        -1        // Auto (special marker)
     };
     
     private static final String[] PRESET_NAMES = {
         "Red", "Green", "Blue", "Cyan", 
-        "Magenta", "Yellow", "White", "Black"
+        "Magenta", "Yellow", "White", "Black", "Auto"
     };
 
     public ColorPickerScreen(Screen parent, BlockOutlinesClient modClient) {
@@ -107,7 +108,7 @@ public class ColorPickerScreen extends Screen {
         };
         this.addDrawableChild(blueSlider);
         
-        // Preset color buttons (3-3-2 layout: 2 rows of 3, then 1 row of 2) - after sliders
+        // Preset color buttons (3-3-3 layout: 3 rows of 3) - after sliders
         int buttonWidth = 60;
         int buttonHeight = 20;
         int presetStartY = startY + 85;
@@ -115,27 +116,26 @@ public class ColorPickerScreen extends Screen {
         for (int i = 0; i < PRESET_COLORS.length; i++) {
             int x, y;
             
-            if (i < 6) {
-                // First two rows (3 buttons each)
-                int col = i % 3;
-                int row = i / 3;
-                int startX = this.width / 2 - (3 * buttonWidth + 2 * 5) / 2; // 3 buttons with 5px spacing
-                x = startX + col * (buttonWidth + 5);
-                y = presetStartY + row * (buttonHeight + 5);
-            } else {
-                // Last row (2 buttons)
-                int col = (i - 6) % 2;
-                int startX = this.width / 2 - (2 * buttonWidth + 1 * 5) / 2; // 2 buttons with 5px spacing
-                x = startX + col * (buttonWidth + 5);
-                y = presetStartY + 2 * (buttonHeight + 5); // Third row
-            }
+            // 3x3 layout
+            int col = i % 3;
+            int row = i / 3;
+            int startX = this.width / 2 - (3 * buttonWidth + 2 * 5) / 2; // 3 buttons with 5px spacing
+            x = startX + col * (buttonWidth + 5);
+            y = presetStartY + row * (buttonHeight + 5);
             
             int color = PRESET_COLORS[i];
             String name = PRESET_NAMES[i];
             
             this.addDrawableChild(ButtonWidget.builder(
                 Text.literal(name),
-                button -> setPresetColor(color)
+                button -> {
+                    if (color == -1) {
+                        // Auto color - extract from target block
+                        setAutoColor();
+                    } else {
+                        setPresetColor(color);
+                    }
+                }
             ).dimensions(x, y, buttonWidth, buttonHeight).build());
         }
         
@@ -143,10 +143,13 @@ public class ColorPickerScreen extends Screen {
         this.addDrawableChild(ButtonWidget.builder(
             Text.literal("Close"),
             button -> this.close()
-        ).dimensions(this.width / 2 - 25, presetStartY + 75, 50, 20).build());
+        ).dimensions(this.width / 2 - 25, presetStartY + 85, 50, 20).build());
     }
     
     private void setPresetColor(int color) {
+        // Disable auto color mode when manually setting a color
+        modClient.setAutoColorMode(false);
+        
         this.red = (color >> 16) & 0xFF;
         this.green = (color >> 8) & 0xFF;
         this.blue = color & 0xFF;
@@ -159,7 +162,124 @@ public class ColorPickerScreen extends Screen {
         updateColor();
     }
     
+    private void setAutoColor() {
+        // Extract color from the target block
+        int autoColor = extractBlockColor(modClient.getTargetBlock());
+        String blockName = modClient.getTargetBlock().getName().getString();
+        
+        // Apply the extracted color without disabling auto color mode
+        this.red = (autoColor >> 16) & 0xFF;
+        this.green = (autoColor >> 8) & 0xFF;
+        this.blue = autoColor & 0xFF;
+        
+        // Update sliders using our custom setValue method
+        this.redSlider.setValue(red / 255.0);
+        this.greenSlider.setValue(green / 255.0);
+        this.blueSlider.setValue(blue / 255.0);
+        
+        // Apply the color to the client
+        modClient.setOutlineColor(autoColor);
+        
+        // Enable auto color mode AFTER setting the color to avoid conflicts
+        modClient.setAutoColorMode(true);
+        
+        // Optional: Show feedback to player if client is available
+        try {
+            MinecraftClient client = MinecraftClient.getInstance();
+            if (client.player != null) {
+                client.player.sendMessage(
+                    Text.literal("Auto color enabled for " + blockName + ": #" + 
+                        String.format("%06X", autoColor)), 
+                    false
+                );
+            }
+        } catch (Exception e) {
+            // Ignore if messaging fails
+        }
+    }
+    
+    private int extractBlockColor(net.minecraft.block.Block targetBlock) {
+        // Try multiple methods to get the block's representative color
+        
+        // Method 1: Try to get the map color from the block's default state
+        try {
+            net.minecraft.block.BlockState defaultState = targetBlock.getDefaultState();
+            net.minecraft.block.MapColor mapColor = defaultState.getMapColor(null, null);
+            
+            if (mapColor != null && mapColor != net.minecraft.block.MapColor.CLEAR) {
+                return mapColor.color;
+            }
+        } catch (Exception e) {
+            // Fallback if map color extraction fails
+        }
+        
+        // Method 2: Try to get color from material/block properties
+        try {
+            net.minecraft.block.BlockState defaultState = targetBlock.getDefaultState();
+            // Some blocks have material colors that can be accessed
+            if (defaultState.hasBlockEntity()) {
+                // Skip blocks with entities for now to avoid complexity
+                return getBlockColorFallback(targetBlock);
+            }
+        } catch (Exception e) {
+            // Continue to fallback
+        }
+        
+        // Method 3: Fallback to predefined colors for common blocks
+        return getBlockColorFallback(targetBlock);
+    }
+    
+    private int getBlockColorFallback(net.minecraft.block.Block block) {
+        // Map common blocks to appropriate colors
+        if (block == net.minecraft.block.Blocks.DIAMOND_ORE || 
+            block == net.minecraft.block.Blocks.DEEPSLATE_DIAMOND_ORE) {
+            return 0x5DADE2; // Light blue for diamond
+        } else if (block == net.minecraft.block.Blocks.IRON_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_IRON_ORE) {
+            return 0xD4AF37; // Gold/brown for iron
+        } else if (block == net.minecraft.block.Blocks.GOLD_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_GOLD_ORE ||
+                   block == net.minecraft.block.Blocks.NETHER_GOLD_ORE) {
+            return 0xFFD700; // Gold color
+        } else if (block == net.minecraft.block.Blocks.COAL_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_COAL_ORE) {
+            return 0x2C2C2C; // Dark gray for coal
+        } else if (block == net.minecraft.block.Blocks.COPPER_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_COPPER_ORE) {
+            return 0xB87333; // Copper color
+        } else if (block == net.minecraft.block.Blocks.REDSTONE_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_REDSTONE_ORE) {
+            return 0xFF0000; // Red for redstone
+        } else if (block == net.minecraft.block.Blocks.LAPIS_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_LAPIS_ORE) {
+            return 0x1E90FF; // Blue for lapis
+        } else if (block == net.minecraft.block.Blocks.EMERALD_ORE || 
+                   block == net.minecraft.block.Blocks.DEEPSLATE_EMERALD_ORE) {
+            return 0x50C878; // Green for emerald
+        } else if (block.getName().getString().toLowerCase().contains("wood") ||
+                   block.getName().getString().toLowerCase().contains("log") ||
+                   block.getName().getString().toLowerCase().contains("plank")) {
+            return 0x8B4513; // Brown for wood
+        } else if (block.getName().getString().toLowerCase().contains("stone")) {
+            return 0x808080; // Gray for stone
+        } else if (block.getName().getString().toLowerCase().contains("grass")) {
+            return 0x228B22; // Green for grass
+        } else if (block.getName().getString().toLowerCase().contains("dirt")) {
+            return 0x8B4513; // Brown for dirt
+        } else if (block.getName().getString().toLowerCase().contains("water")) {
+            return 0x4169E1; // Blue for water
+        } else if (block.getName().getString().toLowerCase().contains("lava")) {
+            return 0xFF4500; // Orange-red for lava
+        } else {
+            // Default fallback color - light gray
+            return 0xC0C0C0;
+        }
+    }
+    
     private void updateColor() {
+        // Disable auto color mode when manually adjusting RGB sliders
+        modClient.setAutoColorMode(false);
+        
         // Apply color immediately for live preview
         int color = (red << 16) | (green << 8) | blue;
         modClient.setOutlineColor(color);
@@ -184,7 +304,11 @@ public class ColorPickerScreen extends Screen {
         
         // Color value text
         String hexColor = String.format("#%06X", currentColor);
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(hexColor), 
+        String colorText = hexColor;
+        if (modClient.isAutoColorMode()) {
+            colorText += " (Auto)";
+        }
+        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(colorText), 
             this.width / 2, previewY + 25, 0xFFFFFF);
     }
 
