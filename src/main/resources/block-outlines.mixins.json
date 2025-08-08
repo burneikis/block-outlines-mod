@@ -4,6 +4,9 @@
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 	],
+	"client": [
+		"WorldRendererMixin"
+	],
 	"injectors": {
 		"defaultRequire": 1
 	},
