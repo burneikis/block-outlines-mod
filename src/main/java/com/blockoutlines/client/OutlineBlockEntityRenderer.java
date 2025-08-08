@@ -12,7 +12,7 @@ import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.state.FallingBlockEntityRenderState;
 import net.minecraft.client.render.model.BlockModelPart;
-import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.util.Identifier;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
@@ -54,7 +54,7 @@ public class OutlineBlockEntityRenderer extends EntityRenderer<OutlineBlockEntit
             BlockState blockState, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider) {
 
         // Use EntityTranslucent render layer - supports outlines and alpha blending
-        RenderLayer renderLayer = RenderLayer.getEntityTranslucent(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, true);
+        RenderLayer renderLayer = RenderLayer.getEntityTranslucent(Identifier.of("minecraft", "textures/atlas/blocks.png"), true);
         VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(renderLayer);
 
         // Wrap with InvisibleVertexConsumer to make faces transparent
