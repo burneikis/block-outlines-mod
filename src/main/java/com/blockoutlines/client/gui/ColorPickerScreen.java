@@ -16,22 +16,19 @@ public class ColorPickerScreen extends Screen {
     
     // Predefined colors
     private static final int[] PRESET_COLORS = {
-        0xFF0000, // Red
-        0x00FF00, // Green  
-        0x0000FF, // Blue
-        0x00FFFF, // Cyan
-        0xFF00FF, // Magenta
-        0xFFFF00, // Yellow
-        0xFFA500, // Orange
-        0x800080, // Purple
-        0xFFFFFF, // White
-        0x000000  // Black
+        0xFF0000, // Red (255,0,0)
+        0x00FF00, // Green (0,255,0)
+        0x0000FF, // Blue (0,0,255)
+        0x00FFFF, // Cyan (0,255,255)
+        0xFF00FF, // Magenta (255,0,255)
+        0xFFFF00, // Yellow (255,255,0)
+        0xFFFFFF, // White (255,255,255)
+        0x000000  // Black (0,0,0)
     };
     
     private static final String[] PRESET_NAMES = {
         "Red", "Green", "Blue", "Cyan", 
-        "Magenta", "Yellow", "Orange", "Purple",
-        "White", "Black"
+        "Magenta", "Yellow", "White", "Black"
     };
 
     public ColorPickerScreen(Screen parent, BlockOutlinesClient modClient) {
@@ -110,17 +107,29 @@ public class ColorPickerScreen extends Screen {
         };
         this.addDrawableChild(blueSlider);
         
-        // Preset color buttons (5 columns, 2 rows for 10 colors) - after sliders
+        // Preset color buttons (3-3-2 layout: 2 rows of 3, then 1 row of 2) - after sliders
         int buttonWidth = 60;
         int buttonHeight = 20;
-        int startX = this.width / 2 - (5 * buttonWidth + 4 * 5) / 2; // 5 buttons with 5px spacing
         int presetStartY = startY + 85;
         
         for (int i = 0; i < PRESET_COLORS.length; i++) {
-            int col = i % 5;
-            int row = i / 5;
-            int x = startX + col * (buttonWidth + 5);
-            int y = presetStartY + row * (buttonHeight + 5);
+            int x, y;
+            
+            if (i < 6) {
+                // First two rows (3 buttons each)
+                int col = i % 3;
+                int row = i / 3;
+                int startX = this.width / 2 - (3 * buttonWidth + 2 * 5) / 2; // 3 buttons with 5px spacing
+                x = startX + col * (buttonWidth + 5);
+                y = presetStartY + row * (buttonHeight + 5);
+            } else {
+                // Last row (2 buttons)
+                int col = (i - 6) % 2;
+                int startX = this.width / 2 - (2 * buttonWidth + 1 * 5) / 2; // 2 buttons with 5px spacing
+                x = startX + col * (buttonWidth + 5);
+                y = presetStartY + 2 * (buttonHeight + 5); // Third row
+            }
+            
             int color = PRESET_COLORS[i];
             String name = PRESET_NAMES[i];
             
@@ -134,7 +143,7 @@ public class ColorPickerScreen extends Screen {
         this.addDrawableChild(ButtonWidget.builder(
             Text.literal("Close"),
             button -> this.close()
-        ).dimensions(this.width / 2 - 25, presetStartY + 60, 50, 20).build());
+        ).dimensions(this.width / 2 - 25, presetStartY + 75, 50, 20).build());
     }
     
     private void setPresetColor(int color) {
