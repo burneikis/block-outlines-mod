@@ -136,7 +136,7 @@ I couldn't get all block entities to work initially, and assumed normal blocks w
 
 [Fake Block Test](https://github.com/burneikis/fake-block-test-template-1.21.5)
 
-Its kinda cool that you can render client side fake entities, worth going back in the commits and playing with the falling sand version, you can even move the fake blocks with pistons, which is kinda cooked.
+Its kinda cool that you can render client side fake entities, worth going back in the commits and playing with the falling sand version, you can even move the fake blocks with pistons, which is kinda cooked. I think im gunna go back and revert some of the commits and make a mod that just renders fake falling sand entities with outlines, because its fun to play with.
 
 Then I started this repo, using fake falling block entities - which I knew I could add an outline to - to create outlines for any block, and it works, but it seems a little dumb to spawn fake entities for this, so I started trying to use the code I made to just directly render outline blocks instead of making an entire entity for each block. The mod I first did that in was:
 
